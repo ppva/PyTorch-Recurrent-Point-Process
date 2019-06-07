@@ -1,2 +1,1 @@
-Please refer to ["Recurrent-Point-Process"](https://github.com/xiaoshuai09/Recurrent-Point-Process) for the original implementation in TensorFlow.
-
+This is an independent rewrite in PyTorch of ["Recurrent-Point-Process"](https://github.com/xiaoshuai09/Recurrent-Point-Process). Please refer to the original work at https://github.com/xiaoshuai09/Recurrent-Point-Process.
