@@ -68,33 +68,31 @@ def RNNPP(
 
 	# Softmax layer
 	if TYPE=='joint':
+	    lstm_e = nn.LSTM(input_size=8, hidden_size=state_size_event, num_layers=1, batch_first=True).to(device)
+	    lstm_t = nn.LSTM(input_size=4, hidden_size=state_size_timeseries, num_layers=1, batch_first=True).to(device)
+	    optim = torch.optim.Adam(lstm_e.parameters(), lr=LR)
+	    optim.add_param_group({"params":lstm_t.parameters()})
 	    W_l = torch.rand((state_size_event+state_size_timeseries, num_classes)).to(device)
 	elif TYPE=='event':
+	    lstm_e = nn.LSTM(input_size=8, hidden_size=state_size_event, num_layers=1, batch_first=True).to(device)
+	    optim = torch.optim.Adam(lstm_e.parameters(), lr=LR)
 	    W_l = torch.rand((state_size_event, num_classes)).to(device)
 	elif TYPE=='timeseries':
+	    lstm_t = nn.LSTM(input_size=4, hidden_size=state_size_timeseries, num_layers=1, batch_first=True).to(device)
+	    optim = torch.optim.Adam(lstm_t.parameters(), lr=LR)
 	    W_l = torch.rand((state_size_timeseries, num_classes)).to(device)
 
 	b_l = torch.zeros(num_classes).to(device)
 	W_l.requires_grad = True
 	b_l.requires_grad = True
 
+	optim.add_param_group({"params":linear.parameters()})
+	optim.add_param_group({"params":W_l})
+	optim.add_param_group({"params":b_l})
 
-	lstm_e = nn.LSTM(input_size=8, hidden_size=state_size_event, num_layers=1, batch_first=True).to(device)
-	lstm_t = nn.LSTM(input_size=4, hidden_size=state_size_timeseries, num_layers=1, batch_first=True).to(device)
-	optim_e = torch.optim.Adam(lstm_e.parameters(), lr=LR)
-	optim_t = torch.optim.Adam(lstm_t.parameters(), lr=LR)
-	optim_e = torch.optim.Adam(linear.parameters(), lr=LR)
-	optim_t = torch.optim.Adam(linear.parameters(), lr=LR)
+	for it in range(ITERS):
 
-	optim_e.add_param_group({"params":W_l})
-	optim_e.add_param_group({"params":b_l})
-	optim_t.add_param_group({"params":W_l})
-	optim_t.add_param_group({"params":b_l})
-
-	for it in range(5000):
-
-		optim_t.zero_grad()
-		optim_e.zero_grad()
+		optim.zero_grad()
 
 		if TYPE == 'joint':
 			real_batch = event_iterator.next_batch(
@@ -190,10 +188,7 @@ def RNNPP(
 		time_loss = total_loss - mark_loss
 		total_loss.backward()
 
-		if  TYPE=='timeseries' or TYPE=='joint': optim_t.step()
-		if  TYPE=='event' or TYPE=='joint': optim_e.step()
-
-
+		optim.step()
 
 		print(
 			'Iter: {};  Total loss: {:.4};  Mark loss: {:.4};  Time loss: {:.4}'.format(it, total_loss, mark_loss,
